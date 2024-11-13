@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Secure Messenger</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Fullscreen background image styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            color: #e0e0e0;
+            position: relative;
+        }
+
+        /* Background image */
+        .background {
+            background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b') no-repeat center center/cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: brightness(0.3); /* Darken image */
+        }
+
+        /* Centered overlay content */
+        .overlay {
+            text-align: center;
+            max-width: 800px;
+            padding: 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(6px); /* Subtle blur for text readability */
+        }
+
+        h1 {
+            color: #ff4081;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        /* Start button styling */
+        #startButton {
+            background-color: #6200ea;
+            color: #ffffff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s;
+        }
+
+        #startButton:hover {
+            background-color: #3700b3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background image layer -->
+    <div class="background"></div>
+    
+    <!-- Text overlay -->
+    <div class="overlay">
+        <h1>Welcome to Secure Messenger</h1>
+        <p>Your privacy-focused, end-to-end encrypted messaging platform.</p>
+        <p>Click below to begin a secure conversation.</p>
+        <button id="startButton" onclick="startMessaging()">Start Messaging</button>
+    </div>
+
+    <script>
+        function startMessaging() {
+            window.location.href = "chat";  // Replace with the actual URL to the messenger page
+        }
+    </script>
+</body>
+</html>
