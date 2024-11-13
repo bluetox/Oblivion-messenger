@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account</title>
+  
+  <style>
+    /* General Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body Styling */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    /* Container */
+    .account-container {
+      width: 300px;
+      padding: 2rem;
+      border-radius: 8px;
+      background-color: #1e1e1e;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Form Header */
+    .account-container h2 {
+      margin-bottom: 1rem;
+      color: #ff4081;
+      text-align: center;
+    }
+
+    /* Input Fields */
+    .account-container input[type="text"],
+    .account-container input[type="password"] {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: none;
+      border-radius: 4px;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      font-size: 1rem;
+    }
+
+    /* Submit Button */
+    .account-container button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      border: none;
+      border-radius: 4px;
+      background-color: #6200ea;
+      color: #e0e0e0;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .account-container button:hover {
+      background-color: #3700b3;
+    }
+    
+    /* Message */
+    .message {
+      margin-top: 1rem;
+      text-align: center;
+      color: #ff4081;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="account-container">
+    <h2>Create Account</h2>
+    <form id="createAccountForm">
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Create Account</button>
+    </form>
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    document.getElementById('createAccountForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const messageDiv = document.getElementById('message');
+
+      // Hash the password using SHA-256
+      const hashedPassword = await hashPassword(password);
+
+      fetch('/api/create_account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: username, password: hashedPassword })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'registered') {
+          messageDiv.textContent = 'Account created successfully!';
+        } else {
+          messageDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+        }
+      })
+      .catch(error => {
+        messageDiv.textContent = 'There was an error processing your request';
+        console.error('Error:', error);
+      });
+    });
+
+    // Function to hash the password using SHA-256
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+  </script>
+
+</body>
+</html>
