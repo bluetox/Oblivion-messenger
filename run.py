@@ -1,6 +1,6 @@
-from app import create_app, socketio
 import ssl
 import os
+from app import create_app, socketio
 
 app = create_app()
 
