@@ -22,14 +22,10 @@ def init_routes(app, socketio, config):
     def home():
         return render_template('landing.html')
     
-    @app.route('/test')
-    def test():
-        return render_template('test.html')
-    
     # Route to render the chat page HTML
     @app.route('/chat')
     def chat():
-        return render_template('chat.html')
+        return render_template('chat.html') 
     
     # Route to render the registration page HTML
     @app.route('/register')
@@ -66,10 +62,8 @@ def init_routes(app, socketio, config):
         
         # Retrieve the associated user ID from the user_ids dictionary
         user_id = user_ids.get(session_cookie)
-        
-        # Update the public key for this user ID
-        public_keys[user_id] = request.args.get('public_key')
-        
+        if not user_id:
+            return jsonify({"error" : "Could not get your session. Establishing a new one"}), 404
         # Return the user ID as JSON
         return jsonify({"user_id": user_id})
 
@@ -234,7 +228,8 @@ def init_routes(app, socketio, config):
     def handle_send_message(data):
         # Extract the target user ID from the data
         target_user_id = data.get("target_user_id")
-        
+        session_id = request.cookies.get('session_id')
+        user_id = user_ids.get(session_id)
         # Check if a target user ID was provided
         if target_user_id:
             # Send the message to the room associated with the target user ID
@@ -248,7 +243,7 @@ def init_routes(app, socketio, config):
         else:
             # Emit an error message if no target user ID was provided
             emit('error', {'message': 'Target user ID is required for sending the message.'})
-
+            
     # Handle socket disconnection
     @socketio.on('disconnect')
     def disconnect():
@@ -259,3 +254,37 @@ def init_routes(app, socketio, config):
             leave_room(user_id)
             # Log the disconnection
             print(f"User {user_id} disconnected.")
+            
+    @socketio.on('append_KyberKey')
+    def appendKey(data):
+        session_id = request.cookies.get('session_id')
+        print("SESSION ID : ", session_id)
+        user_id = user_ids.get(session_id)
+        
+        target_user_id = data.get("target_user_id")
+        key = data.get("public_key")
+        
+        emit('append_KyberKey',{'source_id' : user_id ,'public_key' : key},room=target_user_id)
+        
+    @socketio.on('append_cypher')
+    def appendCypher(data):
+        session_id = request.cookies.get('session_id')
+        user_id = user_ids.get(session_id)
+        cyphertext = data.get('cypherText')
+        destination = data.get('dest_id')
+        
+        emit('append_cypher',{'cypherText' : cyphertext, 'from_user_id' : user_id},room=destination)
+
+        
+    @socketio.on('get_status')
+    def get_status(data):
+        # Retrieve the list of user IDs from the client (passed as 'user_ids' in the event data)
+        user_ids = data.get('allChatIds', [])
+        # Retrieve the list of online user IDs by checking if they are in any active rooms
+        online_user_ids = [
+            user_id for user_id in user_ids
+            if user_id in socketio.server.manager.rooms.get(request.namespace, {})
+        ]
+
+        # Emit the list of online users back to the client
+        emit('onlines', {'online_user_ids': online_user_ids})

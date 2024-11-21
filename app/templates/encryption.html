@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password-Based AES-GCM Encryption</title>
+    <script src="https://cdn.jsdelivr.net/npm/argon2@0.2.7/argon2.js"></script>
+</head>
+<body>
+    <script>
+
+        async function deriveKey(password, salt) {
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                new TextEncoder().encode(password),
+                "PBKDF2",
+                false,
+                ["deriveKey"]
+            );
+
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptData(data, password) {
+
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const nonce = crypto.getRandomValues(new Uint8Array(12));
+            const aesKey = await deriveKey(password, salt);
+            const encryptedData = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: nonce },
+                aesKey,
+                new TextEncoder().encode(data)
+            );
+
+            const combinedData = new Uint8Array(salt.byteLength + nonce.byteLength + encryptedData.byteLength);
+            combinedData.set(new Uint8Array(salt.buffer), 0);
+            combinedData.set(new Uint8Array(nonce.buffer), salt.byteLength);
+            combinedData.set(new Uint8Array(encryptedData), salt.byteLength + nonce.byteLength);
+
+            return btoa(String.fromCharCode(...combinedData));
+        }
+
+        async function decryptData(combinedData, password) {
+
+            const dataBuffer = new Uint8Array(atob(combinedData).split("").map(c => c.charCodeAt(0)));
+            const salt = dataBuffer.slice(0, 16);
+            const nonce = dataBuffer.slice(16, 28);
+            const encryptedData = dataBuffer.slice(28);
+            const aesKey = await deriveKey(password, salt);
+            const decryptedData = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: nonce },
+                aesKey,
+                encryptedData
+            );
+
+            return new TextDecoder().decode(decryptedData);
+        }
+
+
+        (async () => {
+            const password = "mySecurePassword123";
+            const data = "This is a secret message.";
+
+            const encryptedData = await encryptData(data, password);
+            console.log("Encrypted Data:", encryptedData);
+
+            const decryptedMessage = await decryptData(encryptedData, password);
+            console.log("Decrypted Message:", decryptedMessage);
+        })();
+    </script>
+</body>
+</html>
