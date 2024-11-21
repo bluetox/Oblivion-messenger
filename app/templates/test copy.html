@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat - Server and Client Messages</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-height: 100vh;
+    }
+    
+    .messages {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .messages::-webkit-scrollbar-thumb {
+        background: transparent; /* Make the thumb (scrolling button) transparent */
+    }
+      .messages::-webkit-scrollbar {
+        width: 0px; /* Hide the scrollbar */
+        background: transparent; /* Optional: remove any background for the scrollbar */
+    }
+    .message {
+      max-width: 70%;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      word-wrap: break-word;
+    }
+
+    .server {
+      background-color: #2a2a2a;
+      align-self: flex-start; /* Align server messages to the left */
+    }
+
+    .client {
+      background-color: #6200ea;
+      color: white;
+      align-self: flex-end; /* Align client messages to the right */
+    }
+
+    .input-area {
+      display: flex;
+      padding: 10px;
+      background-color: #1e1e1e;
+      position: relative;
+    }
+
+    .input-area input {
+      flex-grow: 1;
+      padding: 8px;
+      background-color: #2a2a2a;
+      border: none;
+      color: #e0e0e0;
+      border-radius: 4px;
+    }
+
+    .input-area button {
+      background-color: #ff4081;
+      border: none;
+      color: white;
+      padding: 8px;
+      margin-left: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .input-area button:hover {
+      background-color: #3700b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chat-container">
+    <div class="messages">
+      <!-- Server and client messages will go here -->
+      <div class="message server">This is a server message!</div>
+      <div class="message client">This is a client message!</div>
+      <div class="message server">Another server message.</div>
+      <div class="message client">And another client message.</div>
+    </div>
+    
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const messagesContainer = document.querySelector('.messages');
+
+      // Create a new message element
+      const newMessage = document.createElement('div');
+      newMessage.classList.add('message', 'client');
+      newMessage.textContent = messageInput.value;
+
+      // Append the new message to the messages container
+      messagesContainer.appendChild(newMessage);
+
+      // Scroll to the bottom of the chat container
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // Clear the input field
+      messageInput.value = '';
+    }
+
+    // Automatically scroll to the bottom when page loads
+    window.onload = function() {
+      const messagesContainer = document.querySelector('.messages');
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    };
+  </script>
+
+</body>
+</html>
