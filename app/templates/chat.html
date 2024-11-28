@@ -29,18 +29,18 @@
             border-radius: 8px;
             height: 100%;
             overflow-y: auto;
+            overflow-x: hidden;
             position: fixed;
             top: 0;
             left: -300px;
             transition: left 0.3s ease;
             z-index: 1000;
-            display: flex; /* Ensures flexbox layout */
-            flex-wrap: wrap; /* Prevents buttons from wrapping to next line */
-            box-sizing: border-box; /* Include padding and border in width/height */
+            display: flex;
+            box-sizing: border-box;
         }
         .sidebar-title {
             margin: 0;
-            padding: 20px;  /* Add padding only to the text */
+            padding: 20px;
             font-size: 24px;
             font-weight: bold;
             text-align: center;
@@ -48,18 +48,50 @@
 
         .sidebar .sidebar-button {
             width: 100%;
+            position: relative;
             background-color: #333333;
             color: #ffffff;
             border: 1px solid #444;
             padding: 20px;
-            border-radius: 0px;
+            border-radius: 0;
             cursor: pointer;
             text-align: left;
             transition: background-color 0.3s ease, transform 0.3s ease;
-            margin-bottom: 0px;
+            margin: 0;
             box-sizing: border-box;
         }
+
+        .green-circle {
+            position: absolute;
+            top: 5px;     
+            right: 5px; 
+            width: 20px; 
+            height: 20px;
+            background-color: #00ff44;
+            border-radius: 50%;
+        }
         
+
+        .half-button-container {
+            display: flex;
+            width: 100%;
+        }
+        
+        .sidebar .sidebar-halfbutton {
+            width: 50%; 
+            background-color: #333333;
+            color: #ffffff;
+            border: 1px solid #444;
+            padding: 20px;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        .sidebar .sidebar-halfbutton:hover {
+            background-color: #404040;
+        }
         .sidebar .sidebar-button:hover {
             background-color: #3700b3;
             transform: translateX(5px);
@@ -151,68 +183,80 @@
             }
         }
         
-
-
         .chat-container {
-            display: flex;
+            display: none;
             flex-direction: column;
             height: 100vh;
             max-height: 100vh;
-          }
+            width: calc(100% - 20px);
+            margin-left: 0;
+            transition: width 0.3s ease, margin-left 0.3s ease;
+        }
+
+        .chat-container.sidebar-visible {
+            width: calc(100% - 250px);
+            margin-left: 250px;
+        }
           
-          .messages {
+        .messages {
             flex-grow: 1;
             overflow-y: auto;
             padding: 10px;
             margin-bottom: 10px;
             display: flex;
             flex-direction: column;
-            width : 140vh;
+            width : 98%;
             gap: 10px;
-          }
-          .messages::-webkit-scrollbar-thumb {
-              background: transparent; /* Make the thumb (scrolling button) transparent */
-          }
-            .messages::-webkit-scrollbar {
-              width: 0px; /* Hide the scrollbar */
-              background: transparent; /* Optional: remove any background for the scrollbar */
-          }
-          .message {
-            max-width: 70%;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: transparent;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        .message {
+            width: auto;
+            max-width: 10%;
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 10px;
+            display: inline-block;
             word-wrap: break-word;
-          }
-      
-          .server {
+        }
+            
+        .server {
             background-color: #2a2a2a;
-            align-self: flex-start; /* Align server messages to the left */
-          }
-      
-          .client {
+            color: white;
+            align-self: flex-start;
+        }
+            
+        .client {
             background-color: #6200ea;
             color: white;
-            align-self: flex-end; /* Align client messages to the right */
-          }
-      
-          .input-area {
+            align-self: flex-end;
+        }
+             
+        .input-area {
             display: flex;
             padding: 10px;
             background-color: #1e1e1e;
             position: relative;
-          }
-      
-          .input-area input {
+        }
+    
+        .input-area input {
             flex-grow: 1;
             padding: 8px;
             background-color: #2a2a2a;
             border: none;
             color: #e0e0e0;
             border-radius: 4px;
-          }
-      
-          .input-area button {
+        }
+    
+        .input-area button {
             background-color: #ff4081;
             border: none;
             color: white;
@@ -220,458 +264,420 @@
             margin-left: 10px;
             border-radius: 4px;
             cursor: pointer;
-          }
-      
-          .input-area button:hover {
+        }
+    
+        .input-area button:hover {
             background-color: #3700b3;
-          }
+        }
         
-          .plus-button {
-            width: 40px;
-            height: 40px;
-            background-color: #4CAF50; /* Green color */
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
             justify-content: center;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s, box-shadow 0.3s;
+            align-items: center;
+            z-index: 1500;
         }
-        
-        .plus-button:hover {
-            background-color: #45a049; /* Darker green */
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
         }
-        
-        .plus-button:active {
-            background-color: #3e8e41; /* Even darker green */
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-            transform: scale(0.95);
+    
+        .modal-content input {
+            background-color: #2a2a2a;
+            color: #ffffff;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            width: 100%;
+            margin-top: 10px;
         }
-            /* Modal Styles */
-    .modal {
-        display: none; /* Hidden by default */
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-        justify-content: center;
-        align-items: center;
-        z-index: 1500; /* Higher than other content */
-    }
+    
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+    
+        .modal-actions button {
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+    
+        .modal-actions button:hover {
+            background-color: #3700b3;
+        }
+    
+        .modal-actions button:active {
+            background-color: #290f6f;
+        }
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+    
+        /* Popup */
+        .popup {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 400px;
+        }
+    
+        .popup h2 {
+            margin-top: 0;
+            color: #333;
+        }
+    
+        .popup input[type="password"] {
+            width: 80%;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    
+        .popup button {
+            background: #6200ea;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    
+        .popup button:hover {
+            background: #3700b3;
+        }
 
-    .modal-content {
-        background-color: #1e1e1e;
-        color: #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
-        width: 300px;
-        text-align: center;
-    }
+        .parameter-button {
+            
+            --btn-bg-color: #007BFF; 
+            --btn-text-color: white;
+            --btn-border-radius: 8px; 
+            --btn-padding: 10px 20px;
+            --btn-font-size: 16px
+            
+            position: relative;
+            bottom: 20px;
+            right: 20px;
+            margin-top: auto;
+            background-color: var(--btn-bg-color);
+            color: var(--btn-text-color);
+            border: none;
+            border-radius: var(--btn-border-radius);
+            padding: var(--btn-padding);
+            font-size: var(--btn-font-size);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
 
-    .modal-content input {
-        background-color: #2a2a2a;
-        color: #ffffff;
-        border: 1px solid #444;
-        border-radius: 8px;
-        padding: 10px;
-        width: 100%;
-        margin-top: 10px;
-    }
-
-    .modal-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 20px;
-    }
-
-    .modal-actions button {
-        background-color: #6200ea;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-    }
-
-    .modal-actions button:hover {
-        background-color: #3700b3;
-    }
-
-    .modal-actions button:active {
-        background-color: #290f6f;
-    }
-
-
+        .parameter-button:hover {
+            background-color: rgba(0, 123, 255, 0.8);
+            transform: scale(1.05);  
+        }
+        pre {
+            white-space: pre-wrap;
+            display : flex;
+            font-size : 22px;
+        }
+        .top-right-image {
+            position: fixed;
+            top: 10px; 
+            right: 10px; 
+            width: 50px; 
+            height: auto;
+            z-index: 1000;
+            transition: width 0.2s ease;
+        }     
+        .top-right-image:hover {
+            width: 60px;
+        }      
     </style>
 </head>
 <body>
-    <!-- Sidebar Toggle Button -->
-    <button class="toggle-sidebar-btn" onclick="toggleSidebar()">☰ Menu</button>
-    
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div id="userId">
-            <p>Loading your ID...</p>
-        </div>
-        <button class="plus-button" onclick="openModal()">+</button>
+    <a href="{{ url_for('settings') }}">
+        <img src="{{ url_for('static', filename='img/profile.svg') }}" alt="Top Right Image" class="top-right-image">
+      </a>
+    <pre id="asciiArt">
+                                                                                 
+         __________ ______________ ________          _     ___       ___         
+         `MMMMMMMMM `MM'MMMMMMMMMM `MMMMMMMb.       dM.    `MMb     dMM'         
+          MM      \  MM /   MM   \  MM    `Mb      ,MMb     MMM.   ,PMM          
+  ____    MM         MM     MM      MM     MM      d'YM.    M`Mb   d'MM   ____   
+ 6MMMMb   MM    ,    MM     MM      MM     MM     ,P `Mb    M YM. ,P MM  6MMMMb  
+MM'  `Mb  MMMMMMM    MM     MM      MM    .M9     d'  YM.   M `Mb d' MM MM'  `Mb 
+     ,MM  MM    `    MM     MM      MMMMMMM9'    ,P   `Mb   M  YM.P  MM      ,MM 
+    ,MM'  MM         MM     MM      MM  \M\      d'    YM.  M  `Mb'  MM     ,MM' 
+  ,M'     MM         MM     MM      MM   \M\    ,MMMMMMMMb  M   YP   MM   ,M'    
+,M'       MM      /  MM     MM      MM    \M\   d'      YM. M   `'   MM ,M'      
+MMMMMMMM _MMMMMMMMM _MM_   _MM_    _MM_    \M\_dM_     _dMM_M_      _MM_MMMMMMMM 
+                                                                                
+                                                                                
+ </pre>
+<div class="popup-overlay" id="passwordPopup">
+    <div class="popup">
+        <h2>Enter Password</h2>
+        <input type="password" id="passwordInput" placeholder="Password">
+        <button onclick="submitPassword()">Submit</button>
     </div>
-    <div id="chatModal" class="modal">
-        <div class="modal-content">
-            <h2>Create New Chat</h2>
-            <label for="username">Enter recipient's username:</label>
-            <input type="text" id="chat_name" placeholder="Chat name">
-            <input type="text" id="user_id" placeholder="User id">
-            <div class="modal-actions">
-                <button onclick="closeModal()">Cancel</button>
-                <button onclick="addChat()">Create Chat</button>
-            </div>
-        </div>
-    </div>
-    
+</div>
 
-      </div>
+<!-- Sidebar Toggle Button -->
+<button class="toggle-sidebar-btn" onclick="toggleSidebar()">☰ Menu</button>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div id="userId">
+        <p>Loading your ID...</p>
+    </div>
+
+    <!-- Half Buttons Container -->
+    <div class="half-button-container">
+        <button class="sidebar-halfbutton" onclick="openModal()">Add Chat</button>
+        <button class="sidebar-halfbutton" onclick="removeChat()">Remove current chat</button>
+    </div>
+</div>
+
+<!-- Chat Modal -->
+<div id="chatModal" class="modal">
+    <div class="modal-content">
+        <h2>Create New Chat</h2>
+        <label for="chat_name">Enter chat name:</label>
+        <input type="text" id="chat_name" placeholder="Chat name">
+        <label for="user_id">Enter user ID:</label>
+        <input type="text" id="user_id" placeholder="User ID">
+        <div class="modal-actions">
+            <button onclick="closeModal()">Cancel</button>
+            <button onclick="addChat()">Create Chat</button>
+        </div>
+    </div>
+</div>
+
+<!-- Chat Container -->
+<div id="chatContainer" class="chat-container" style="display: none;">
+    <div class="messages">
+        <!-- Messages will be dynamically loaded here -->
+    </div>
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+      <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/database.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/encryption.js') }}",type="module"></script>
         <script>
-            const ngrokUrl = window.location.origin;
-            let socket;
-            let publicKey = null;
-            let privateKey = null;
-            let userId = null;
-            let CurrentChatId;
-            let ChatOn;
-        
-            // Function to check if the session_id cookie exists
-            function getCookie(name) {
-                console.log(document.cookie);
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop().split(';').shift();
-                return null;
-            }
-            function addChat() {
+                        
+            async function addChat() {
+
                 const name = document.getElementById("chat_name").value;
-                const user_id = document.getElementById("user_id").value;
+                const destId = document.getElementById("user_id").value;
                 const newButton = document.createElement('button');
-                // Set the text and classes for the new button
-                newButton.textContent = name;
+                const chat_data = { name: name, user_id: destId, timestamp: Date.now() }
+                allChatIds.push(destId);
+
                 newButton.classList.add('sidebar-button');
+
+                chatNum = await saveChat(chat_data);                             
+                newButton.textContent = name;
+                newButton.dataset.destId = destId;
+                newButton.dataset.chatid = chatNum;
                 newButton.onclick = function() {
-                    removeChatContainer();
-                    CurrentChatId = user_id;
-                    createChatContainer();
+
+                    socket.emit('append_KyberKey', { public_key: Array.from(kyberPublicKey), target_user_id: CurrentChatId });
+                    CurrentChatId = destId;
+                    CurrentChatIndex = chatNum;
+                    clearChat();
+                    openChatContainer();
+                    loadMessages(chatNum);
+                    
                 };
                 
-        
-                // Get the sidebar element
                 const sidebar = document.querySelector('.sidebar');
-        
-                // Append the new button to the sidebar
+
                 sidebar.appendChild(newButton);
+                document.getElementById("chat_name").value = '';
+                document.getElementById("user_id").value = '';
                 closeModal();
             }
         
-            // Toggle sidebar visibility
-            function toggleSidebar() {
-                const sidebar = document.getElementById("sidebar");
-                const toggleButton = document.querySelector(".toggle-sidebar-btn"); // Correctly reference the toggle button
-            
-                // Toggle visibility
-                sidebar.classList.toggle("visible"); 
-            
-                // Adjust button position based on sidebar visibility
-                if (sidebar.classList.contains("visible")) {
-                    toggleButton.style.left = "300px";
-                } else {
-                    toggleButton.style.left = "10px";
-                }
-            }
 
-        
-            // Utility function to convert ArrayBuffer to Base64 string
-            function arrayBufferToBase64(buffer) {
-                const bytes = new Uint8Array(buffer);
-                let binary = '';
-                bytes.forEach(b => binary += String.fromCharCode(b));
-                return window.btoa(binary);
-            }
-        
-            // Generate RSA key pair
-            async function generateRSAKeyPair() {
-                try {
-                    const keys = await crypto.subtle.generateKey(
-                        { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
-                        true,
-                        ["encrypt", "decrypt"]
-                    );
-        
-                    publicKey = keys.publicKey;
-                    privateKey = keys.privateKey;
-        
-                    const exportedPublicKey = await crypto.subtle.exportKey("spki", publicKey);
-                    return arrayBufferToBase64(exportedPublicKey);
-                } catch (error) {
-                    console.error("Error generating RSA key pair:", error);
+            function toggleSidebar() {
+
+            const sidebar = document.getElementById("sidebar");
+            const toggleButton = document.querySelector(".toggle-sidebar-btn");
+            const chatContainer = document.getElementById("chatContainer");
+
+            sidebar.classList.toggle("visible");
+
+            if (sidebar.classList.contains("visible")) {
+
+                toggleButton.style.left = "300px";
+                chatContainer.classList.add("sidebar-visible");
+            } else {
+
+                toggleButton.style.left = "10px";
+                chatContainer.classList.remove("sidebar-visible");
                 }
             }
         
-            // Setup function to create cookies and establish WebSocket connection
-            async function setup() {
-                const sessionId = getCookie("session_id");
-        
-                if (sessionId) {
-                    // If session_id cookie exists, skip session creation and just fetch user data
-                    try {
-                        publicKey = await generateRSAKeyPair();
-                        const response = await fetch(`/api/get-user-data?session_id=${sessionId}&public_key=${publicKey}`);
-                        const data = await response.json();
-                        userId = data.user_id;
-                        document.getElementById("userId").innerHTML = `<h2>Your User ID:</h2><pre>${userId}</pre>`;
-                        console.log("Successfully got user data and RSA key");
-        
-                        // Establish WebSocket connection after fetching user data
-                        socket = io.connect(ngrokUrl, {
-                            transports: ['websocket'],
-                            withCredentials: true,
-                            secure: true
-                        });
-        
-                        socket.on('connect', () => {
-                            console.log("Connected to the server via Socket.IO!");
-                            socket.emit('append_key', { public_key: publicKey });
-                        });
-        
-                        // Periodic heartbeat to keep the connection alive
-                        setInterval(() => {
-                            socket.emit('heartbeat');
-                        }, 2000);
-        
-                        // Handling message reception after connection
-                        socket.on('receive_message', async function(data) {
-                            console.log('Message received:', data);
-                            try {
-                                const decryptedMessage = await decryptMessage(data.message);
-                                addMessageToHistory(`${decryptedMessage}`, "user");
-                            } catch (error) {
-                                addMessageToHistory(`Failed to decrypt message from ${data.from_user_id}.`, "error");
-                            }
-                        });
-        
-                    } catch (error) {
-                        console.error("Error fetching user data:", error);
-                    }
-                } else {
-                    // If session_id does not exist, create a new session
-                    try {
-                        const response = await fetch('api/create_cookies');
-                        const data = await response.json(); // Wait for response to be parsed
-                        document.cookie = `session_id=${data.session_cookie}; path=/; expires=Fri, 31 Dec 2024 23:59:59 GMT`;
-                        userId = data.user_id;
-        
-                        // Step 2: Generate RSA keys
-                        publicKey = await generateRSAKeyPair();  // Wait for key generation
-        
-                        // Display user ID
-                        document.getElementById("userId").innerHTML = `<h2>Your User ID:</h2><pre>${userId}</pre>`;
-        
-                        console.log("Successfully got cookie, RSA key, and user ID");
-        
-                        // Step 3: Establish WebSocket connection after session is ready
-                        socket = io.connect(ngrokUrl, {
-                            transports: ['websocket'],
-                            withCredentials: true,
-                            secure: true
-                        });
-        
-                        // After socket connects, emit the public key
-                        socket.on('connect', () => {
-                            console.log("Connected to the server via Socket.IO!");
-                            if (publicKey) {
-                                socket.emit('append_key', { public_key: publicKey });
-                            }
-                        });
-        
-                        // Periodic heartbeat to keep the connection alive
-                        setInterval(() => {
-                            socket.emit('heartbeat');
-                        }, 2000);
-        
-                        // Handling message reception after connection
-                        socket.on('receive_message', async function(data) {
-                            console.log('Message received:', data);
-                            try {
-                                const decryptedMessage = await decryptMessage(data.message);
-                                addMessageToHistory(`${decryptedMessage}`, "received");
-                            } catch (error) {
-                                addMessageToHistory(`Failed to decrypt message from ${data.from_user_id}.`, "error");
-                            }
-                        });
-        
-                    } catch (error) {
-                        console.error("Error in setup", error);
-                    }
-                }
-            }
-        
-            // Function to send a message
             async function sendMessage() {
                 const targetUserId = CurrentChatId;
                 const message = document.getElementById("messageInput").value.trim();
         
                 if (!targetUserId || !message) {
+
                     alert("Please enter both Target User ID and a message.");
                     return;
                 }
         
-                try {
-                    const response = await fetch(`/api/get-public-key?user_id=${encodeURIComponent(targetUserId)}`);
-                    if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
-                    
-                    const data = await response.json();
-                    const targetPublicKey = data.public_key;
-                    if (!targetPublicKey) {
-                        alert("Target user's public key not found.");
-                        return;
-                    }
-        
-                    const encryptedMessage = await encryptMessage(message, targetPublicKey);
-                    socket.emit('send_message', { target_user_id: targetUserId, message: encryptedMessage, from_user_id: userId });
-                    addMessageToHistory(`${message}`, 'client');
-                } catch (error) {
-                    console.error("Error sending message:", error);
-                    alert("Failed to send the message.");
+                console.log("sending a message to: ", targetUserId);
+                console.log("secret for this connexion is: ", sharedSecret[targetUserId]);
+                const encryptedMessage = await encryptMessage(message, convertToHex(sharedSecret[targetUserId])).catch((error) => {
+                    console.error("Error encrypting message :", error);
+                });
+
+                socket.emit('send_message', { target_user_id: targetUserId, message: encryptedMessage});
+                addMessageToHistory(`${message}`, 'client', CurrentChatIndex);
+            }
+            
+            function addMessageToHistory(message, type, chatId, sourceId) {
+
+                if (sourceId == CurrentChatId || type == "client") {
+
+                    const messagesContainer = document.querySelector('.messages');
+                    const newMessage = document.createElement('div');
+                    newMessage.textContent = message;
+
+                    newMessage.classList.add('message', type);
+                    messagesContainer.appendChild(newMessage);
+                
+
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
-            }
-        
-            // Encrypt message using RSA public key
-            async function encryptMessage(message, base64PublicKey) {
-                const publicKeyArrayBuffer = base64ToArrayBuffer(base64PublicKey);
-                const importedPublicKey = await crypto.subtle.importKey(
-                    "spki",
-                    publicKeyArrayBuffer,
-                    { name: "RSA-OAEP", hash: "SHA-256" },
-                    false,
-                    ["encrypt"]
-                );
-                const encodedMessage = new TextEncoder().encode(message);
-                const encryptedMessage = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, importedPublicKey, encodedMessage);
-                return arrayBufferToBase64(encryptedMessage);
-            }
-        
-            // Utility function to convert Base64 string to ArrayBuffer
-            function base64ToArrayBuffer(base64) {
-                const binary = window.atob(base64);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
-                }
-                return bytes.buffer;
-            }
-        
-            // Decrypt message using RSA private key
-            async function decryptMessage(encryptedBase64) {
-                const encryptedArrayBuffer = base64ToArrayBuffer(encryptedBase64);
-                const decryptedArrayBuffer = await crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, encryptedArrayBuffer);
-                return new TextDecoder().decode(decryptedArrayBuffer);
-            }
-        
-            // Add message to the message history
-            function addMessageToHistory(message, type) {
-                const messagesContainer = document.querySelector('.messages');
-                const newMessage = document.createElement('div');
-                newMessage.classList.add('message', type);
-                newMessage.textContent = message; // Use the message parameter, not messageInput.value
+
+                const messageData = {
+                    chatid: chatId,
+                    message: message,
+                    type: type,
+                    timestamp: new Date().toISOString(),
+                };
             
-                // Append the new message to the messages container
-                messagesContainer.appendChild(newMessage);
+                saveMessage(messageData).catch((error) => {
+                    console.error("Error saving message to database:", error);
+                });
             
-                // Scroll to the bottom of the chat container
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-                // Clear the input field (optional)
                 messageInput.value = '';
             }
-            function removeChatContainer() {
-                const chatContainer = document.querySelector('.chat-container');
+
+            function closeChatContainer() {
+
+                const chatContainer = document.getElementById('chatContainer');
+
                 if (chatContainer) {
+
                     document.body.removeChild(chatContainer);
-                    ChatOn = false; // Reset the ChatOn flag to allow re-creation if needed
-                }
-            }
-            
-            function createChatContainer() {
-                if (ChatOn === true) {
-                    removeChatContainer();
                     ChatOn = false;
-                    return;
                 }
-                const chatContainer = document.createElement('div');
-                chatContainer.classList.add('chat-container');
-            
-                // Create messages container
-                const messagesContainer = document.createElement('div');
-                messagesContainer.classList.add('messages');
-            
-                // Create a sample server message as an example
-                const serverMessage = document.createElement('div');
-                serverMessage.classList.add('message', 'server');
-                messagesContainer.appendChild(serverMessage);
-            
-                // Append messages container to chat container
-                chatContainer.appendChild(messagesContainer);
-            
-                // Create input area
-                const inputArea = document.createElement('div');
-                inputArea.classList.add('input-area');
-            
-                // Create input field
-                const messageInput = document.createElement('input');
-                messageInput.type = 'text';
-                messageInput.id = 'messageInput';
-                messageInput.placeholder = 'Type a message...';
-                inputArea.appendChild(messageInput);
-            
-                // Create send button
-                const sendButton = document.createElement('button');
-                sendButton.textContent = 'Send';
-                sendButton.onclick = function() {
-                    sendMessage();
-                };
-                inputArea.appendChild(sendButton);
-            
-                // Append input area to chat container
-                chatContainer.appendChild(inputArea);
-            
-                // Append the entire chat container to the body
-                document.body.appendChild(chatContainer);
-                ChatOn = true;
             }
-            
+
+            function openChatContainer() {
+
+                const chatContainer = document.getElementById('chatContainer');
+                const logo = document.getElementById("asciiArt");
+                logo.style.display = "none";
+                chatContainer.style.display = 'flex';
+            }
+
             async function unregisterUser() {
+
                 const response = await fetch('/api/unregister');
                 const data = await response.json();
-                console.log(data.status)
             }
+
             function openModal() {
                 const modal = document.getElementById("chatModal");
-                modal.style.display = "flex"; // Show the modal
+                modal.style.display = "flex";
             }
             
-            // Close the modal
             function closeModal() {
                 const modal = document.getElementById("chatModal");
-                modal.style.display = "none"; // Hide the modal
+                modal.style.display = "none";
+
             }
-            
-            setup();
-        </script>
+
+            async function initializeKyber() {
+                try {
+                    const { Kyber1024 } = await import("https://esm.sh/crystals-kyber-js@1.1.1");
+                    window.kyberInstance = new Kyber1024();
+                } catch (error) {
+                    console.error("Error loading Kyber1024:", error);
+                }
+            };
+            function submitPassword() {
+              password = document.getElementById('passwordInput').value;
+              if (password) {
+                document.getElementById('passwordPopup').style.display = 'none';
+              } else {
+                alert('Please enter a password.');
+              }
+            }
+
+            function openWebpage() {
+                window.open(`${ngrokUrl}/register`, '_blank');
+            }
+
+            const ngrokUrl = window.location.origin;
+            let socket;
+            let userId = null;
+            let CurrentChatId;
+            let CurrentChatIndex;
+            let ChatOn;
+            let chatDb;
+            let messageDb;
+            let allChatIds = [];
+            let onlineIds = [];
+            let PrivateKeyList = {};
+            let sharedSecret = {};
+            let password;
+            console.log("password: ", password);
+            window.onload = async function () {
+                await initializeKyber();
+                await setupChatDatabase();
+                displayAllChats();
+                await setupMessageDatabase();
+                setup();
+            };
+
         
-</body>
+        </script>       
+    </body>
 </html>

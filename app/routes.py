@@ -1,6 +1,5 @@
 from flask import jsonify, request, render_template
 from flask_socketio import join_room, emit, leave_room
-from app.socket import heartbeat_times
 from databases.database import Database
 import secrets
 
@@ -10,11 +9,9 @@ session_ids = {}
 # Dictionary to map session identifiers to user IDs (e.g., {session_id: user_id})
 user_ids = {}
 
-# Dictionary to store public keys associated with user IDs (e.g., {user_id: public_key})
-public_keys = {}
-
 # Initialize the database instance
 db = Database()
+db.create_database()
 
 def init_routes(app, socketio, config):
     # Route to render the landing page HTML from the templates folder
@@ -22,14 +19,10 @@ def init_routes(app, socketio, config):
     def home():
         return render_template('landing.html')
     
-    @app.route('/test')
-    def test():
-        return render_template('test.html')
-    
     # Route to render the chat page HTML
     @app.route('/chat')
     def chat():
-        return render_template('chat.html')
+        return render_template('chat.html') 
     
     # Route to render the registration page HTML
     @app.route('/register')
@@ -40,6 +33,10 @@ def init_routes(app, socketio, config):
     @app.route('/login')
     def login():
         return render_template('login.html')
+    
+    @app.route('/settings')
+    def settings():
+        return render_template('settings.html')
     
     # API route to create session and user IDs based on config settings
     @app.route('/api/create_cookies')
@@ -66,67 +63,10 @@ def init_routes(app, socketio, config):
         
         # Retrieve the associated user ID from the user_ids dictionary
         user_id = user_ids.get(session_cookie)
-        
-        # Update the public key for this user ID
-        public_keys[user_id] = request.args.get('public_key')
-        
+        if not user_id:
+            return jsonify({"error" : "Could not get your session. Establishing a new one"}), 404
         # Return the user ID as JSON
         return jsonify({"user_id": user_id})
-
-    # API route to retrieve the public key associated with a specific user ID
-    # Used for client-side RSA encryption
-    @app.route('/api/get-public-key')
-    def get_public_key():
-        # Retrieve the user ID from the request arguments
-        user_id = request.args.get('user_id')
-        
-        # Verify if the user exists and has an assigned public key
-        if user_id and user_id in public_keys:
-            
-            # Return the public key as JSON
-            return jsonify({"public_key": public_keys[user_id]})
-        
-        # Return an error message if the user ID is not found or has no public key
-        return jsonify({"error": "User ID not found or public key not registered"}), 404
-
-    
-    # API route to remove session and user IDs, as well as the associated sid and public key for a specific user
-    # Used for unregistering a user
-    @app.route('/api/unregister')
-    def handle_unregister():
-        # Retrieve the session ID from cookies
-        session_id = request.cookies.get('session_id')
-        
-        # Check if the session ID exists
-        if not session_id:
-            return jsonify({"status": "No active session found"}), 400
-
-        # Find the sid associated with the session ID
-        sid = None
-        for current_sid, user_session_id in session_ids.items():
-            if user_session_id == session_id:
-                sid = current_sid
-                break
-        
-        # Handle cases where no sid is found for the session ID
-        if not sid:
-            return jsonify({"status": "No sid assigned to session_id"}), 404
-        
-        # Remove the sid from session IDs
-        del session_ids[sid]
-        print(f"Session with ID {sid} removed.")
-        
-        # Verify if a public key is linked to the user ID and remove it if found
-        user_id = user_ids.get(session_id)
-        if user_id not in public_keys:
-            return jsonify({"status": "No public key assigned to this user ID"}), 404
-        
-        # Delete the public key for the user ID
-        del public_keys[user_id]
-        print(f"Public key for user ID {user_id} removed.")
-
-        # Return a success message
-        return jsonify({"status": f"Unregistered user with session ID {sid}"}), 200
 
         # API route to create an account with a username and hashed password provided in JSON format
     @app.route('/api/create_account', methods=['POST'])
@@ -143,18 +83,17 @@ def init_routes(app, socketio, config):
         # Extract the hashed password
         password = data.get('password')
         
-        # Generate a unique user ID based on the configuration settings
-        user_id = secrets.token_hex(config['user_id_size'])
-        
         # Verify that both username and password are provided
         if username and password:
-            # Attempt to add the new user to the database
-            if db.add_user(username, user_id, password):
-                # Return a success message and the generated user_id
-                return jsonify({"status": "registered", "user_id": user_id}), 201
-            else:
-                # Return an error message if there is an issue with the database operation
+            try:
+                user_id = db.add_user(username, password)
+                session = secrets.token_urlsafe(config['token_lengh'])
+                user_ids[session] = user_id
+                
+                return jsonify({"status": "registered","token" : session}), 201
+            except: 
                 return jsonify({"error": "There was an error writing to the database"}), 500
+
         else:
             # Return an error if either the username or password is missing
             return jsonify({"error": "Username and password are required"}), 400
@@ -170,16 +109,19 @@ def init_routes(app, socketio, config):
         password = data.get('password')
         if username and password:
             # Check if the login process is successful
-            if not db.login(username, password):
+            status, user_id = db.login(username, password)
+            
+            if status == False:
                 # Return an error if the password or username is incorrect
                 return jsonify({"status": "Password or username incorrect"})
             else:
-                # Return a success message if the login process is successful
-                return jsonify({"status": f"Logged in as {username}"})
+                session = secrets.token_urlsafe(config['token_lengh'])
+                user_ids[session] = user_id
+                return jsonify({"status": f"logged_in", "token" : session})
         else:
             # Return an error if the username and/or password is missing
             return jsonify({"error": "Username and password are required"}), 400
-    
+
     # Handle the initial socket connection
     @socketio.on('connect')
     def connect():
@@ -211,36 +153,19 @@ def init_routes(app, socketio, config):
         except Exception as e:
             print(f"Connection failed due to an unexpected error: {e}")
     
-    # Acknowledge and store the user's public key
-    @socketio.on('append_key')
-    def append_key(data):
-        # Retrieve the session ID from the request cookies
-        session_id = request.cookies.get('session_id')
-        
-        # Get the user ID associated with the session
-        user_id = user_ids.get(session_id)
-        
-        # Extract the public key from the request data
-        public_key = data.get('public_key')
-        
-        # Assign the public key to the user ID
-        public_keys[user_id] = public_key
-        
-        # Return the success status as JSON
-        return jsonify({"status": True})
-    
     # Forward a message to the specified user based on their user ID
     @socketio.on('send_message')
     def handle_send_message(data):
         # Extract the target user ID from the data
         target_user_id = data.get("target_user_id")
-        
+        session_id = request.cookies.get('session_id')
+        user_id = user_ids.get(session_id)
         # Check if a target user ID was provided
         if target_user_id:
             # Send the message to the room associated with the target user ID
             emit('receive_message', {
                 "message": data["message"],
-                "from_user_id": data["from_user_id"]
+                "from_user_id": user_id
             }, room=target_user_id)
             
             # Log the message forwarding action
@@ -248,7 +173,7 @@ def init_routes(app, socketio, config):
         else:
             # Emit an error message if no target user ID was provided
             emit('error', {'message': 'Target user ID is required for sending the message.'})
-
+            
     # Handle socket disconnection
     @socketio.on('disconnect')
     def disconnect():
@@ -259,3 +184,37 @@ def init_routes(app, socketio, config):
             leave_room(user_id)
             # Log the disconnection
             print(f"User {user_id} disconnected.")
+            
+    @socketio.on('append_KyberKey')
+    def appendKey(data):
+        session_id = request.cookies.get('session_id')
+        print("SESSION ID : ", session_id)
+        user_id = user_ids.get(session_id)
+        
+        target_user_id = data.get("target_user_id")
+        key = data.get("public_key")
+        
+        emit('append_KyberKey',{'source_id' : user_id ,'public_key' : key},room=target_user_id)
+        
+    @socketio.on('append_cypher')
+    def appendCypher(data):
+        session_id = request.cookies.get('session_id')
+        user_id = user_ids.get(session_id)
+        cyphertext = data.get('cypherText')
+        destination = data.get('dest_id')
+        
+        emit('append_cypher',{'cypherText' : cyphertext, 'from_user_id' : user_id},room=destination)
+
+        
+    @socketio.on('get_status')
+    def get_status(data):
+        # Retrieve the list of user IDs from the client (passed as 'user_ids' in the event data)
+        user_ids = data.get('allChatIds', [])
+        # Retrieve the list of online user IDs by checking if they are in any active rooms
+        online_user_ids = [
+            user_id for user_id in user_ids
+            if user_id in socketio.server.manager.rooms.get(request.namespace, {})
+        ]
+
+        # Emit the list of online users back to the client
+        emit('onlines', {'online_user_ids': online_user_ids})
