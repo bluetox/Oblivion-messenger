@@ -2,5 +2,5 @@
     "user_id_size" : 16,
     "heartbeat_lengh" : 2,
     "secret" : "secret",
-    "token_lengh" : 64
+    "token_length" : 64
 }
