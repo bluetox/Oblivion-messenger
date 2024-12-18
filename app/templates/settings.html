@@ -4,100 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings Page</title>
-  <style>
-    /* General Reset */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-
-    /* Body Styling */
-    body {
-      display: flex;
-      min-height: 100vh;
-      background-color: #f0f0f0;
-    }
-
-    /* Sidebar Styling */
-    .sidebar {
-      width: 250px;
-      background-color: #1e1e1e;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      height: 100%;
-      padding-top: 20px;
-    }
-
-    .sidebar h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 1.5em;
-    }
-
-    .menu {
-      display: flex;
-      flex-direction: column;
-      list-style: none;
-    }
-
-    .menu li {
-      padding: 15px 20px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .menu li:hover {
-      background-color: #6200ea;
-    }
-
-    .menu li.active {
-      background-color: #3700b3;
-    }
-
-    /* Main Content Styling */
-    .main-content {
-      margin-left: 250px;  /* Leave space for sidebar */
-      padding: 20px;
-      width: calc(100% - 250px);
-    }
-
-    .section {
-      display: none;  /* Hide sections initially */
-    }
-
-    .section.active {
-      display: block;  /* Show the active section */
-    }
-
-    .section h3 {
-      margin-bottom: 15px;
-      font-size: 1.8em;
-      color: #333;
-    }
-
-    /* Buttons Styling */
-    .btn {
-      padding: 10px 20px;
-      margin: 10px 0;
-      color: #fff;
-      background-color: #6200ea;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .btn:hover {
-      background-color: #3700b3;
-    }
-  </style>
+  <link rel="stylesheet" href="static/css/settings.css">
 </head>
 <body>
 
-  <!-- Sidebar -->
   <div class="sidebar">
     <h2>Settings</h2>
     <ul class="menu">
@@ -108,7 +18,6 @@
     </ul>
   </div>
 
-  <!-- Main Content -->
   <div class="main-content">
     <div id="account" class="section active">
       <h3>Account Settings</h3>
@@ -133,72 +42,6 @@
       <p>Adjust your general application settings.</p>
     </div>
   </div>
-
-  <!-- JavaScript to Handle Section Switching and Account Info -->
-  <script>
-    function loadParams() {
-      const settings = JSON.parse(localStorage.getItem('userSettings'));
-      const accountInfoElement = document.getElementById('accountInfo');
-      const authButtonsElement = document.getElementById('authButtons');
-
-      if (settings && settings.isloggedin === true && settings.username) {
-        accountInfoElement.innerHTML = `Hello, ${settings.username}!`;
-        authButtonsElement.style.display = 'none'; // Hide login/register buttons
-      } else {
-        accountInfoElement.innerHTML = 'You are not logged in.';
-        authButtonsElement.style.display = 'block'; // Show login/register buttons
-      }
-    }
-
-    function showSection(sectionId) {
-      // Hide all sections
-      const sections = document.querySelectorAll('.section');
-      sections.forEach(section => section.classList.remove('active'));
-
-      // Show the selected section
-      document.getElementById(sectionId).classList.add('active');
-
-      // Update active menu item
-      const menuItems = document.querySelectorAll('.menu-item');
-      menuItems.forEach(item => item.classList.remove('active'));
-      event.target.classList.add('active');
-    }
-
-    function clearDb(name) {
-      let request = indexedDB.deleteDatabase(name);
-
-      request.onsuccess = function() {
-        console.log(`IndexedDB ${name} cleared successfully.`);
-      };
-
-      request.onerror = function(event) {
-        console.error('Error clearing IndexedDB:', event.target.error);
-      };
-
-    }
-
-    function disappear() {
-
-      clearDb("Messages");
-      clearDb("chatIndex");
-      localStorage.clear();
-      console.log('LocalStorage cleared.');
-      document.cookie.split(';').forEach(function(cookie) {
-        const cookieName = cookie.split('=')[0];
-        document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-      });
-      if ('caches' in window) {
-        caches.keys().then(function(cacheNames) {
-          cacheNames.forEach(function(cacheName) {
-            caches.delete(cacheName);
-          });
-          console.log('All caches cleared.');
-        });
-      } else {
-        console.log('Cache API is not supported in this browser.');
-      }
-    }
-    loadParams();
-  </script>
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>  
 </body>
 </html>

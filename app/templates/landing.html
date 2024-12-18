@@ -4,85 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Secure Messenger</title>
-    <style>
-        /* Basic Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Fullscreen background image styling */
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow-y: auto;
-            color: #e0e0e0;
-            background: #121212;
-            position: relative;
-        }
-
-        /* Background image */
-        .background {
-            background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b') no-repeat center center/cover;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            filter: brightness(0.3); /* Darken image */
-        }
-
-        /* Content wrapper */
-        .content {
-            max-width: 800px;
-            padding: 20px;
-            border-radius: 8px;
-            backdrop-filter: blur(6px);
-            background: rgba(18, 18, 18, 0.7);
-        }
-
-        h1 {
-            color: #ff4081;
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        p {
-            font-size: 1.2em;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-
-        /* Start button styling */
-        #startButton {
-            display: block;
-            margin: 20px auto;
-            background-color: #6200ea;
-            color: #ffffff;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1em;
-            transition: background-color 0.3s;
-        }
-
-        #startButton:hover {
-            background-color: #3700b3;
-        }
-    </style>
+    <link rel="stylesheet" href="static/css/landing.css">
 </head>
 <body>
-    <!-- Background image layer -->
+
     <div class="background"></div>
     
-    <!-- Content wrapper -->
     <div class="content">
         <h1>Welcome to 2EITRAM2</h1>
         <p>
@@ -102,7 +29,7 @@
 
     <script>
         function startMessaging() {
-            window.location.href = "chat";  // Replace with the actual URL to the messenger page
+            window.location.href = "chat";
         }
     </script>
 </body>

@@ -80,7 +80,8 @@ async function saveMessage(data) {
         }
 
         try {
-            const encryptedData = await encryptData(data.message, password); // Encrypt the message
+            const messageArray = stringToUint8Array(data.message)
+            const encryptedData = await encryptData(messageArray, password);
             data.message = encryptedData;
             const transaction = messageDb.transaction("messages", "readwrite");
             const objectStore = transaction.objectStore("messages");
@@ -120,7 +121,7 @@ async function displayAllChats() {
             const { id, user_id, name, timestamp } = cursor.value;
             const newButton = document.createElement('button');
 
-            allChatIds.push(user_id);
+            allDestIds.push(user_id);
             newButton.textContent = name;
             newButton.classList.add('sidebar-button');
             newButton.dataset.chatid = id;
@@ -128,14 +129,15 @@ async function displayAllChats() {
             newButton.dataset.timestamp = timestamp;
             newButton.onclick = async () => {
 
-                CurrentChatId = user_id;
-                CurrentChatIndex = id;
+                currentChatDestUserId = user_id;
+                currentChatNum = id;
                 if (!sharedSecret[user_id]) {
                     [publicKey, privateKey] = await kyberInstance.generateKeyPair();
                     PrivateKeyList[user_id] = privateKey;
-                    socket.emit('append_KyberKey', { public_key: Array.from(publicKey), target_user_id: CurrentChatId });
+                    socket.emit('append_KyberKey', { public_key: Array.from(publicKey), target_user_id: currentChatDestUserId });
+                    
                 }
-    
+                socket.emit('dilithium_key', {key: dilithiumPublicKey.toHex(), 'dest_id' : currentChatDestUserId});
                 clearChat();
                 openChatContainer();
                 loadMessages(id);
@@ -173,7 +175,7 @@ async function loadMessages(chatId) {
         const cursorRequest = chatIndex.openCursor(keyRange, "next");
 
         const messagesContainer = document.querySelector('.messages');
-        const messagePromises = []; // Store decryption promises
+        const messagePromises = [];
 
         cursorRequest.onsuccess = (event) => {
             const cursor = event.target.result;
@@ -186,10 +188,11 @@ async function loadMessages(chatId) {
             }
 
             const { message, type } = cursor.value;
-            const processMessage = decryptData(message, password)
-                .then((decryptedMessage) => {
+            const processMessage = decryptMessage(message, password, "file")
+                .then((message) => {
                     const newMessage = document.createElement('div');
-                    newMessage.textContent = decryptedMessage;
+                    const decryptedMessage = new TextDecoder().decode(message);
+                    newMessage.textContent = decryptedMessage.replace(/&nbsp;/g, ' ').replace(/<br>/g, '\n');
                     newMessage.classList.add('message', type);
 
                     messagesContainer.appendChild(newMessage);
@@ -215,16 +218,13 @@ async function removeChatFromDb() {
         console.error("chatDb is not initialized");
         return;
     }
-
     const transaction = chatDb.transaction("users", "readwrite");
     const objectStore = transaction.objectStore("users");
 
-    // Delete the chat by userId (or chatId)
-    const request = objectStore.delete(CurrentChatIndex);
+    const request = objectStore.delete(currentChatNum);
 
     return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-            console.log(`Chat with userId ${userId} removed successfully.`);
             resolve(true);
         };
 
@@ -233,4 +233,101 @@ async function removeChatFromDb() {
             reject(event.target.error);
         };
     });
+}
+
+function findIdByUserId(targetUserId) {
+    return new Promise((resolve, reject) => {
+        const transaction = chatDb.transaction("users", 'readonly');
+        const store = transaction.objectStore('users');
+
+        const index = store.index('user_id');
+        const getRequest = index.get(targetUserId);
+
+        getRequest.onsuccess = () => {
+            if (getRequest.result) {
+                resolve(getRequest.result.id);
+            } else {
+                reject('User not found.');
+            }
+        };
+
+        getRequest.onerror = () => {
+            reject('Error fetching data.');
+        };
+    });
+}
+function findUserIdById(targetId) {
+    return new Promise((resolve, reject) => {
+        if (!chatDb) {
+            reject('Database is not initialized.');
+            return;
+        }
+
+        // Open a readonly transaction on the "users" object store
+        const transaction = chatDb.transaction('users', 'readonly');
+        const store = transaction.objectStore('users');
+
+        // Query the object store by the primary key (id)
+        const getRequest = store.get(targetId);
+
+        // Handle request success
+        getRequest.onsuccess = () => {
+            const result = getRequest.result;
+            if (result && result.user_id) {
+                resolve(result.user_id);
+            } else {
+                console.warn(`No record found for id: ${targetId}`);
+                reject(`No user found for id: ${targetId}`);
+            }
+        };
+
+        // Handle request error
+        getRequest.onerror = (event) => {
+            console.error('Request error:', event.target.error);
+            reject('Error fetching data from IndexedDB.');
+        };
+
+        // Handle transaction errors
+        transaction.onerror = (event) => {
+            console.error('Transaction error:', event.target.error);
+            reject('Transaction error while fetching data.');
+        };
+    });
+}
+
+function checkOutdatedMessages() {
+    if (!messageDb) {
+        console.error("chatDb is not initialized");
+        return;
+    }
+
+    const transaction = messageDb.transaction("messages", "readwrite");
+    const objectStore = transaction.objectStore("messages");
+
+    const currentTime = new Date().getTime();
+    const outdatedThreshold = 5 * 60 * 1000;
+
+    const cursorRequest = objectStore.openCursor();
+
+    cursorRequest.onsuccess = function(event) {
+        const cursor = event.target.result;
+
+        if (cursor) {
+            const message = cursor.value;
+            const messageTimestamp = message.timestamp;
+            const date = new Date(messageTimestamp);
+            if (currentTime - date > outdatedThreshold) {
+                console.log(`Message ID ${cursor.key} is outdated.`);
+                objectStore.delete(cursor.key);
+            }
+
+            cursor.continue();
+        } else {
+            console.log("No more messages to check.");
+        }
+    };
+
+    cursorRequest.onerror = function(event) {
+        console.error("Error iterating through users/messages:", event.target.error);
+    };
 }
