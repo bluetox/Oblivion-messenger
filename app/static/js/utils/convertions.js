@@ -16,6 +16,7 @@ export function convertToHex(key) {
     return hex;
 }
 
+
 export function hexToUint8Array(hex) {
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2) {
