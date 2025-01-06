@@ -299,7 +299,7 @@ export function checkOutdatedMessages() {
     const objectStore = transaction.objectStore("messages");
 
     const currentTime = new Date().getTime();
-    const outdatedThreshold = 5 * 60 * 1000;
+    const outdatedThreshold = localStorage.getItem('deletionTimer') * 60000;
 
     const cursorRequest = objectStore.openCursor();
 

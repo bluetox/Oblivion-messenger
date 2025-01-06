@@ -55,4 +55,11 @@ function loadParams() {
       });
     }
   }
+  function handleNumberChoice() {
+    const delTimer = document.getElementById('numberInput').value;
+    localStorage.setItem('deletionTimer', delTimer);
+    console.log(`Deletion timer set to ${delTimer} minutes.`);
+  }
+  const delTimerButton = document.getElementById('delTimerButton');
+  delTimerButton.addEventListener('click', handleNumberChoice);
   loadParams();

@@ -52,6 +52,9 @@ def init_routes(app, socketio, config):
     def test():
         return render_template('test.html')
     
+    @app.route('/keyhost')
+    def keyhost():
+        return render_template('keyhost.html')
     
     # API route to create session and user IDs based on config settings
     @app.route('/api/create_cookies')
@@ -74,7 +77,7 @@ def init_routes(app, socketio, config):
         
         data = request.get_json()
         
-        session_id = request.args.get('session_id')
+        session_id = request.cookies.get('session_id')
         user_id = user_ids[session_id]
         
         key = data['key']
@@ -91,7 +94,7 @@ def init_routes(app, socketio, config):
         
         return jsonify({
             "key" : key
-        })
+    })
         
     # API route to retrieve a user ID based on a session ID and set a new public key
     # This ensures that the user retains the same user ID across sessions, while allowing for a new public key

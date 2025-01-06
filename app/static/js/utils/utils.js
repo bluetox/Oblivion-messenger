@@ -217,12 +217,10 @@ export async function removeChat() {
         let sharedSecrets = JSON.parse(localStorage.getItem('shared_secrets')) || {};
         delete sharedSecrets[userId];
         localStorage.setItem('shared_secrets', JSON.stringify(sharedSecrets));
-        delete sharedSecret[userId];
     });
     
     await removeChatFromDb();
     
-
     clearChat();
     if (button) {
         button.remove();

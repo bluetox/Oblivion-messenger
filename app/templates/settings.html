@@ -25,13 +25,19 @@
       <div id="authButtons" style="display: none;">
         <button class="btn" onclick="window.location.href='/login'">Log In</button>
         <button class="btn" onclick="window.location.href='/register'">Register</button>
-
       </div>
     </div>
     <div id="privacy" class="section">
       <h3>Privacy Settings</h3>
       <p>Manage your privacy preferences here.</p>
-      <button class="btn" onclick="disappear()">disappear</button>
+      <button class="btn" onclick="disappear()">Disappear</button>
+      
+      <!-- New Button and Input for Number Selection -->
+      <div class="number-selection">
+        <label for="numberInput">Choose a number:</label>
+        <input type="number" id="numberInput" min="0" max="100" placeholder="Enter a number">
+        <button class="btn" id="delTimerButton">Submit</button>
+      </div>
     </div>
     <div id="notifications" class="section">
       <h3>Notification Settings</h3>
@@ -42,6 +48,7 @@
       <p>Adjust your general application settings.</p>
     </div>
   </div>
-  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>  
+
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>
 </html>
