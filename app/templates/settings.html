@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings Page</title>
   <link rel="stylesheet" href="static/css/settings.css">
+  <style>
+    #chatBackground {
+      padding: 10px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
 
@@ -31,7 +38,10 @@
       <h3>Privacy Settings</h3>
       <p>Manage your privacy preferences here.</p>
       <button class="btn" onclick="disappear()">Disappear</button>
-      
+      <p>Allow other users to decrypt your messages once stored</p>
+      <div id="toggle-button" class="toggle-button active">
+        <span id="toggle-label">ON</span>
+      </div>
       <div class="number-selection">
         <label for="numberInput">Message deletion timer (minutes):</label>
         <input type="number" id="numberInput" min="0" max="100" placeholder="Enter a number">
@@ -43,10 +53,208 @@
       <p>Control your notification preferences here.</p>
     </div>
     <div id="general" class="section">
-      <h3>General Settings</h3>
-      <p>Adjust your general application settings.</p>
+      <h3>Customisation</h3>
+      <p>Chat background</p>
+      
+      <input type="text" id="chatBackground" placeholder="Enter a URL or a color (e.g., #ff0000 or https://example.com/image.jpg)">
+      <input type="file" id="chatBackgroundFile" accept="image/*">
+      <button class="btn" onclick="saveBackground()">Save Background</button>
+      <div class="image-container">
+
+        <div class="image-item" onclick="handleImageClick('http://sfwallpaper.com/images/galaxy-cat-wallpaper-6.jpg')">
+          <img src="http://sfwallpaper.com/images/galaxy-cat-wallpaper-6.jpg" alt="Image 1">
+          <div class="image-label">Image 1</div>
+        </div>
+    
+        <div class="image-item" onclick="handleImageClick('https://wallpaper-mania.com/wp-content/uploads/2018/09/High_resolution_wallpaper_background_ID_77700024003.jpg')">
+          <img src="https://wallpaper-mania.com/wp-content/uploads/2018/09/High_resolution_wallpaper_background_ID_77700024003.jpg" alt="Image 2">
+          <div class="image-label">Image 2</div>
+        </div>
+    
+        <div class="image-item" onclick="handleImageClick('https://e1.pxfuel.com/desktop-wallpaper/461/478/desktop-wallpaper-whatsapp-dark-whatsapp-chat.jpg')">
+          <img src="https://e1.pxfuel.com/desktop-wallpaper/461/478/desktop-wallpaper-whatsapp-dark-whatsapp-chat.jpg" alt="Image 3">
+          <div class="image-label">Image 3</div>
+        </div>
+    
+        <div class="image-item" onclick="handleImageClick('https://i.pinimg.com/736x/0b/c3/4c/0bc34c083d2926e07cfcabc016ea49f0.jpg')">
+          <img src="https://i.pinimg.com/736x/0b/c3/4c/0bc34c083d2926e07cfcabc016ea49f0.jpg" alt="Image 4">
+          <div class="image-label">Image 4</div>
+        </div>
+        <div class="image-item" onclick="handleImageClick('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fimages.wallpapersden.com%2Fimage%2Fdownload%2Fstarry-landscape-4k-cool-blue-moon_bW5tbG6UmZqaraWkpJRobWllrWdma2U.jpg&f=1&nofb=1&ipt=86b011ad1e016b23381b6067068ca2839e0920ba7a1adfa748f1742f9e109b76&ipo=images')">
+          <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fimages.wallpapersden.com%2Fimage%2Fdownload%2Fstarry-landscape-4k-cool-blue-moon_bW5tbG6UmZqaraWkpJRobWllrWdma2U.jpg&f=1&nofb=1&ipt=86b011ad1e016b23381b6067068ca2839e0920ba7a1adfa748f1742f9e109b76&ipo=images" alt="Image 4">
+          <div class="image-label">Image 4</div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <script>
+    let currentBackground = null;
+
+    function saveBackground() {
+      const input = document.getElementById('chatBackground').value;
+
+
+      localStorage.setItem('chatBackground', input);
+      document.getElementById('chatBackground').value = '';
+      alert("Background saved!");
+      
+    }
+
+    function handleImageClick(image) {
+      localStorage.setItem('chatBackground', image);
+      alert("Background set");
+    }
+    async function generateAesGcmKey() {
+      try {
+          const key = await crypto.subtle.generateKey(
+              {
+                  name: "AES-GCM",
+                  length: 256,
+              },
+              true,
+              ["encrypt", "decrypt"]
+          );
+  
+          console.log("AES-GCM Key successfully generated!");
+          const rawKey = await crypto.subtle.exportKey("raw", key);
+          const base64Key = btoa(String.fromCharCode(...new Uint8Array(rawKey)));
+          return base64Key;
+
+      } catch (error) {
+          console.error("Error generating AES-GCM key:", error);
+      }
+  }
+  async function generateDecryptionKey(destUserId) {
+    const base64Key = await generateAesGcmKey();
+    data = {key: base64Key, user_id: destUserId}
+    fetch('/api/set_decryption_key', {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify(data)
+  })
+      .then(response => {
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(result => {
+          console.log("Response from server:", result);
+      })
+  }
+  function getDecryptionKey(destUserId) {
+    const url = `/api/get_decryption_key?user_id=${encodeURIComponent(destUserId)}`;
+
+    fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.log("Response from server:", result);
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+  }
+
+  function allowMessageDecryption(status) {
+    if (status === 'true') {
+      console.log(generateAesGcmKey());
+    }
+  }
+  
+  const toggleButton = document.getElementById("toggle-button");
+  const toggleLabel = document.getElementById("toggle-label");
+  
+  toggleButton.addEventListener("click", () => {
+    toggleButton.classList.toggle("active");
+  
+    if (toggleButton.classList.contains("active")) {
+      toggleLabel.textContent = "ON";
+      sendKeys();
+    } else {
+
+      toggleLabel.textContent = "OFF";
+
+      const url = '/api/disable_decryption';
+      fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+      })
+
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(result => {
+          console.log("Response from server:", result);
+          if (result.status === "success") {
+            allowMessageDecryption("true");
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+        });
+  
+    }
+  });
+  function sendKeys() {
+    let keys = JSON.parse(localStorage.getItem('keys')) || {};
+  
+    for (const key in keys) {
+      if (keys.hasOwnProperty(key)) {
+        console.log(`Key: ${key}, Value: ${keys[key]}`);
+  
+        const base64Key = keys[key];
+        const destUserId = key;
+  
+        const data = {
+          key: base64Key,
+          user_id: destUserId
+        };
+  
+        fetch('/api/set_decryption_key', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify(data)
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(result => {
+            console.log("Response from server:", result);
+          })
+          .catch(error => {
+            console.error("Error sending key to server:", error);
+          });
+      }
+    }
+  }
+  </script>
 
   <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>

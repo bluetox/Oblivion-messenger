@@ -1,7 +1,7 @@
-import  {clearChat} from '/static/js/utils/utils.js'
+import  {clearChat, base64ToBuffer} from '/static/js/utils/utils.js'
 import {openChatContainer} from '/static/js/utils/uiChatInteract.js'
 import { stringToUint8Array } from '/static/js/utils/convertions.js';
-import {encryptData, decryptMessage} from '/static/js/utils/encryption.js'
+import {encryptData, decryptMessage, getDecryptionKey, encryptMessage} from '/static/js/utils/encryption.js'
 
 export async function setupChatDatabase() {
 
@@ -80,8 +80,12 @@ export async function saveMessage(data) {
         }
 
         try {
-            const messageArray = stringToUint8Array(data.message)
-            const encryptedData = await encryptData(messageArray, password);
+            const messageArray = stringToUint8Array(data.message);
+            const destUserId = await findUserIdById(data.chatid);
+            const externalKey = encryptionExternalKey[destUserId];
+            const bufferKey = base64ToBuffer(externalKey);
+            const firstEncryption = await encryptMessage(messageArray, bufferKey);
+            const encryptedData = await encryptData(firstEncryption, password);
             data.message = encryptedData;
             const transaction = messageDb.transaction("messages", "readwrite");
             const objectStore = transaction.objectStore("messages");
@@ -138,6 +142,7 @@ export async function displayAllChats() {
                     socket.emit('dilithium_key', {key: dilithiumPublicKey.toHex(), 'dest_id' : currentChatDestUserId});
                     clearChat();
                     openChatContainer();
+                    encryptionExternalKey[user_id] = await getDecryptionKey(user_id);
                     loadMessages(id);
                 }); 
 
@@ -155,51 +160,79 @@ export async function loadMessages(chatId) {
     return new Promise((resolve, reject) => {
         if (!chatId) {
             console.error("Invalid chatId:", chatId);
-            reject("Invalid chatId");
-            return;
+            return reject("Invalid chatId");
         }
         if (!messageDb) {
             console.error("messageDb is not initialized");
-            reject("Database not initialized");
-            return;
+            return reject("Database not initialized");
         }
 
         const transaction = messageDb.transaction("messages", "readonly");
         const objectStore = transaction.objectStore("messages");
         const chatIndex = objectStore.index("chatid");
-
         const keyRange = IDBKeyRange.only(chatId);
         const cursorRequest = chatIndex.openCursor(keyRange, "next");
 
         const messagesContainer = document.querySelector('.messages');
+        if (!messagesContainer) {
+            console.error("Messages container not found");
+            return reject("Messages container not found");
+        }
+
         const messagePromises = [];
 
-        cursorRequest.onsuccess = (event) => {
+        cursorRequest.onsuccess = async (event) => {
             const cursor = event.target.result;
             if (!cursor) {
-
-                Promise.all(messagePromises)
-                    .then(() => resolve())
-                    .catch((error) => reject(error));
+                try {
+                    await Promise.all(messagePromises);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
                 return;
             }
 
             const { message, type } = cursor.value;
-            const processMessage = decryptMessage(message, password, "file")
-                .then((message) => {
+
+            const processMessage = (async () => {
+                try {
+                    const destUserId = await findUserIdById(chatId);
+                    if (!encryptionExternalKey[destUserId]) {
+                        let response = await getDecryptionKey(destUserId);
+                        if (response == null) {
+                            console.log("Message decryption has been disabled !");
+                            return;
+                        }
+                        encryptionExternalKey[destUserId] = response;
+                    }
+                    const key = encryptionExternalKey[destUserId]
+                    const bufferKey = base64ToBuffer(key);
+                    const firstDecrypt = await decryptMessage(message, password, "file");
+                    const finalMessageBuffer = await decryptMessage(firstDecrypt, bufferKey, "message");
+
+                    const decryptedMessage = new TextDecoder().decode(finalMessageBuffer);
+
                     const newMessage = document.createElement('div');
-                    const decryptedMessage = new TextDecoder().decode(message);
                     newMessage.textContent = decryptedMessage.replace(/&nbsp;/g, ' ').replace(/<br>/g, '\n');
                     newMessage.classList.add('message', type);
 
-                    messagesContainer.appendChild(newMessage);
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                })
-                .catch((error) => {
-                    console.error("Error decrypting message:", error);
-                });
+                    return newMessage;
+                } catch (error) {
+                    console.error("Error processing message:", error);
+                    throw error;
+                }
+            })();
 
-            messagePromises.push(processMessage);
+            messagePromises.push(
+                processMessage.then((newMessage) => {
+                    if (newMessage) {
+                        messagesContainer.appendChild(newMessage);
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                })
+            );
+
             cursor.continue();
         };
 
@@ -209,6 +242,7 @@ export async function loadMessages(chatId) {
         };
     });
 }
+
 export async function removeChatFromDb() {
     if (!chatDb) {
         console.error("chatDb is not initialized");
@@ -257,15 +291,11 @@ export function findUserIdById(targetId) {
             reject('Database is not initialized.');
             return;
         }
-
-        // Open a readonly transaction on the "users" object store
         const transaction = chatDb.transaction('users', 'readonly');
         const store = transaction.objectStore('users');
 
-        // Query the object store by the primary key (id)
         const getRequest = store.get(targetId);
 
-        // Handle request success
         getRequest.onsuccess = () => {
             const result = getRequest.result;
             if (result && result.user_id) {
@@ -276,13 +306,11 @@ export function findUserIdById(targetId) {
             }
         };
 
-        // Handle request error
         getRequest.onerror = (event) => {
             console.error('Request error:', event.target.error);
             reject('Error fetching data from IndexedDB.');
         };
 
-        // Handle transaction errors
         transaction.onerror = (event) => {
             console.error('Transaction error:', event.target.error);
             reject('Transaction error while fetching data.');
@@ -300,6 +328,9 @@ export function checkOutdatedMessages() {
 
     const currentTime = new Date().getTime();
     const outdatedThreshold = localStorage.getItem('deletionTimer') * 60000;
+    if (!outdatedThreshold) {
+        return;
+    }
 
     const cursorRequest = objectStore.openCursor();
 

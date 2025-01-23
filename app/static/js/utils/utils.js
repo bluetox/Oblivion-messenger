@@ -1,7 +1,7 @@
 import {hexToArrayBuffer} from '/static/js/utils/convertions.js'
-import {addMessageToHistory} from '/static/js/utils/uiChatInteract.js'
+import {addMessageToHistory, openModal} from '/static/js/utils/uiChatInteract.js'
 import {encryptData, decryptMessage, generateKyberKeyPair} from '/static/js/utils/encryption.js';
-import {findUserIdById, removeChatFromDb} from '/static/js/utils/database.js';
+import {findUserIdById, removeChatFromDb, findIdByUserId} from '/static/js/utils/database.js';
 import {validateDilithiumSignature} from '/static/js/utils/signing.js';
 import {decryptFile} from '/static/js/utils/fileEncrypt.js'
 
@@ -366,4 +366,15 @@ export function loadInvites() {
     }
 
     areChatsDisplayed = !areChatsDisplayed;
+}
+
+export function base64ToBuffer(base64) {
+    const binaryString = atob(base64);
+    const buffer = new Uint8Array(binaryString.length);
+
+    for (let i = 0; i < binaryString.length; i++) {
+        buffer[i] = binaryString.charCodeAt(i);
+    }
+
+    return buffer.buffer;
 }

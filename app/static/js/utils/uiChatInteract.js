@@ -1,4 +1,4 @@
-import {encryptMessage, hashData} from '/static/js/utils/encryption.js';
+import {encryptMessage, hashData, generateDecryptionKey, getDecryptionKey} from '/static/js/utils/encryption.js';
 import { stringToUint8Array, arrayBufferToHex} from '/static/js/utils/convertions.js';
 import {getOfflineMessages, decryptSharedSecrets, setup, clearChat} from '/static/js/utils/utils.js'
 import { sendFile} from '/static/js/utils/fileEncrypt.js';
@@ -12,7 +12,8 @@ export async function addChat() {
     const chat_data = { name: name, user_id: destId, timestamp: Date.now() }
     allDestIds.push(destId);
     newButton.classList.add('sidebar-button');
-    const chatNum = await saveChat(chat_data);                             
+    const chatNum = await saveChat(chat_data);   
+    generateDecryptionKey(destId);
     newButton.textContent = name;
     newButton.dataset.destId = destId;
     newButton.dataset.chatid = chatNum;
@@ -29,6 +30,7 @@ export async function addChat() {
         socket.emit('dilithium_key', {key: dilithiumPublicKey.toHex(), 'dest_id' : currentChatDestUserId});
         clearChat();
         openChatContainer();
+        encryptionExternalKey[destId] = await getDecryptionKey(destId);
         loadMessages(chatNum);
     }); 
     const sidebar = document.querySelector('.sidebar');
@@ -50,19 +52,24 @@ export async function addChat() {
     closeModal();
 }
 export function toggleSidebar() {
-    
-const sidebar = document.getElementById("sidebar");
-const toggleButton = document.querySelector(".toggle-sidebar-btn");
-const chatContainer = document.getElementById("chatContainer");
-sidebar.classList.toggle("visible");
-if (sidebar.classList.contains("visible")) {
-    toggleButton.style.left = "300px";
-    chatContainer.classList.add("sidebar-visible");
-} else {
-    toggleButton.style.left = "10px";
-    chatContainer.classList.remove("sidebar-visible");
+    const sidebar = document.getElementById("sidebar");
+    const toggleButton = document.querySelector(".toggle-sidebar-btn");
+    const chatContainer = document.getElementById("chatContainer");
+
+    sidebar.classList.toggle("visible");
+
+    if (sidebar.classList.contains("visible")) {
+        sidebar.style.width = "300px";
+        toggleButton.style.left = "300px";
+
+        chatContainer.classList.add("sidebar-visible");
+    } else {
+        sidebar.style.width = "0";
+        toggleButton.style.left = "10px";
+        chatContainer.classList.remove("sidebar-visible");
     }
 }
+
 export async function sendMessage() {
     const fileInput = document.getElementById('fileInput');
     if (fileInput.files.length != 0) {
@@ -115,10 +122,27 @@ function closeChatContainer() {
         isChatShowed = false;
     }
 }
+function loadBackground() {
+    const savedBackground = localStorage.getItem('chatBackground');
+    
+    if (savedBackground) {
+      const mainContent = document.getElementById('chatContainer');
+      
+      if (savedBackground.startsWith('data:image')) {
+        mainContent.style.backgroundImage = `url(${savedBackground})`;
+        mainContent.style.backgroundColor = '';
+      } else if (savedBackground.startsWith('#')) {
+        mainContent.style.backgroundColor = savedBackground;
+        mainContent.style.backgroundImage = '';
+      } else {
+        mainContent.style.backgroundImage = `url(${savedBackground})`;
+        mainContent.style.backgroundColor = '';
+      }
+    }
+}
 export function openChatContainer() {
     const chatContainer = document.getElementById('chatContainer');
-    const logo = document.getElementById("asciiArt");
-    logo.style.display = "none";
+    loadBackground()
     chatContainer.style.display = 'flex';
 }
 export function openModal() {

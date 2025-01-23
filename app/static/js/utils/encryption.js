@@ -51,7 +51,6 @@ export async function encryptMessage(message, keyBuffer) {
 
     ivAndEncrypted.set(iv, 0);
     ivAndEncrypted.set(encryptedArray, iv.byteLength);
-
     return ivAndEncrypted;
 }
 
@@ -69,13 +68,17 @@ export async function decryptMessage(encryptedBuffer, keyBuffer, type) {
             ["decrypt"]
         );
 
-        const decryptedBuffer = await window.crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: iv },
-            key,
-            cipherTextBuffer
-        );
-
-        return decryptedBuffer;
+        try {
+            const decryptedBuffer = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                cipherTextBuffer
+            );
+            return decryptedBuffer;
+        } catch (error) {
+            console.error("Decryption failed:", error);
+            throw new Error("Decryption failed: " + error.message);
+        }
     }
     if (type === "file") {
         try {
@@ -124,6 +127,81 @@ export async function hashData(rawData) {
     const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
     return hashHex;
 }
+
+async function generateAesGcmKey() {
+    try {
+        const key = await crypto.subtle.generateKey(
+            {
+                name: "AES-GCM",
+                length: 256,
+            },
+            true,
+            ["encrypt", "decrypt"]
+        );
+
+        console.log("AES-GCM Key successfully generated!");
+        const rawKey = await crypto.subtle.exportKey("raw", key);
+        const base64Key = btoa(String.fromCharCode(...new Uint8Array(rawKey)));
+        return base64Key;
+
+    } catch (error) {
+        console.error("Error generating AES-GCM key:", error);
+    }
+}
+export async function generateDecryptionKey(destUserId) {
+    const base64Key = await generateAesGcmKey();
+    const data = {key: base64Key, user_id: destUserId}
+    let keys = JSON.parse(localStorage.getItem('keys')) || {};
+    keys[destUserId] = base64Key;
+    localStorage.setItem('keys', JSON.stringify(keys));
+    fetch('/api/set_decryption_key', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log("Response from server:", result);
+    })
+}
+export function getDecryptionKey(destUserId) {
+    const url = `/api/get_decryption_key?user_id=${encodeURIComponent(destUserId)}`;
+
+    return fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            return data.key;
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            throw error;
+        });
+}
+
+
+
+
+
 
 export default {
     hashData,

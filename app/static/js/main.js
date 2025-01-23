@@ -23,9 +23,15 @@ window.PrivateKeyList = {};
 window.sharedSecret = {};
 window.password = null;
 window.pageLoaded = false;
+window.encryptionExternalKey = {};
 
 window.onload = function() {
     window.pageLoaded = true;
+    const loadingScreen = document.getElementById('loading-screen');
+    const mainContent = document.getElementById('main');
+    loadingScreen.style.display = 'none';
+    mainContent.style.visibility = 'visible';
+
     const submitButton = document.getElementById('submitButton');
     submitButton.addEventListener('click', submitPassword);
 

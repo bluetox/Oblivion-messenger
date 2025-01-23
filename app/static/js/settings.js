@@ -27,6 +27,7 @@ function clearDb(name) {
     console.error('Error clearing IndexedDB:', event.target.error);
   };
 }
+
 function disappear() {
   clearDb("Messages");
   clearDb("chatIndex");

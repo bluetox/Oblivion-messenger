@@ -12,7 +12,8 @@ session_ids = {}
 # Dictionary to map session identifiers to user IDs (e.g., {session_id: user_id})
 user_ids = {}
 
-keys = {}
+keys_store = []
+
 # Initialize the database instance
 db = Database()
 db.create_database()
@@ -74,28 +75,72 @@ def init_routes(app, socketio, config):
         
     @app.route('/api/set_decryption_key', methods=['POST'])
     def set_decryption_key():
-        
         data = request.get_json()
-        
         session_id = request.cookies.get('session_id')
-        user_id = user_ids[session_id]
-        
+        if not session_id:
+            return jsonify({"status": "error", "message": "Session not found"}), 400
+
+        owner_id = user_ids.get(session_id)
+        if not owner_id:
+            return jsonify({"status": "error", "message": "Invalid session ID"}), 400
+
         key = data['key']
-        keys[user_id] = key
-        
+        decrypter_id = data['user_id']
+
+        existing_entry = next((entry for entry in keys_store if entry['owner_id'] == owner_id and entry['decrypter_id'] == decrypter_id), None)
+
+        if existing_entry:
+            existing_entry['key'] = key
+            action = "updated"
+        else:
+            keys_store.append({
+                "owner_id": owner_id,
+                "decrypter_id": decrypter_id,
+                "key": key
+            })
+            action = "added"
+
         return jsonify({
-            "status" : "success"
+            "status": "success",
+            "message": f"Decryption key {action} successfully"
         })
+
     
     @app.route('/api/get_decryption_key')
     def get_decryption_key():
-        user_id = request.args.get('user_id')
-        key = keys[user_id]
-        
+        owner_id = request.args.get('user_id')
+        session_id = request.cookies.get('session_id')
+        decrypter_id = user_ids[session_id]
+        print(keys_store)
+        key = None
+        print("owner", owner_id, "decrypter", decrypter_id)
+        for record in keys_store:
+            if record["owner_id"] == owner_id and record["decrypter_id"] == decrypter_id:
+                key = record["key"]
+                break
         return jsonify({
             "key" : key
     })
         
+    @app.route('/api/disable_decryption')
+    def disable_decryption():
+        session_id = request.cookies.get('session_id')
+        if not session_id:
+            return jsonify({"status": "error", "message": "Session ID not found"}), 400
+
+        user_id = user_ids.get(session_id)
+        if not user_id:
+            return jsonify({"status": "error", "message": "User not found"}), 400
+
+        for record in keys_store:
+            if record["owner_id"] == user_id:
+                record["key"] = None
+                break
+            
+        return jsonify({
+            "status": "success",
+            "message": "Decryption disabled"
+    })
     # API route to retrieve a user ID based on a session ID and set a new public key
     # This ensures that the user retains the same user ID across sessions, while allowing for a new public key
     @app.route('/api/get-user-data')
