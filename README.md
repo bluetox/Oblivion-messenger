@@ -1,5 +1,8 @@
 # 2EITRAM2 Messenger
 
+## Try it yourself
+evqtvgurwfbrfvgdqxott6i6ohdeghrldsrlomiqiwfhbfyxlkiau4yd.onion
+
 ## What is 2EITRAM2?
 
 2EITRAM2 is a secure and private messenger application built using Electron. It prioritizes user anonymity and data security by leveraging cutting-edge encryption and privacy-preserving technologies. All connections are automatically routed through the Tor network, ensuring your communication remains private and untraceable.
