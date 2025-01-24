@@ -1,7 +1,7 @@
 # 2EITRAM2 Messenger
 
 ## Try it yourself
-evqtvgurwfbrfvgdqxott6i6ohdeghrldsrlomiqiwfhbfyxlkiau4yd.onion
+https://evqtvgurwfbrfvgdqxott6i6ohdeghrldsrlomiqiwfhbfyxlkiau4yd.onion
 
 ## What is 2EITRAM2?
 
