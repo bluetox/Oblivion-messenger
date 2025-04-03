@@ -128,6 +128,7 @@ pub async fn establish_ss_with_node(read_half: &mut tokio::io::ReadHalf<TcpStrea
 
     let mut locked_shared_secret = super::super::NODE_SHARED_SECRET.lock().await;
     *locked_shared_secret = pqc_kyber::decapsulate(ct, &keypair.secret).unwrap().to_vec();
+    println!("shared secret: {:?}", locked_shared_secret);
 }
 
 pub async fn create_server_connect_packet() -> Result<Vec<u8>, String> {
@@ -182,6 +183,10 @@ pub async fn server_connect(app: &AppHandle) -> io::Result<()> {
     let mut chunk = vec![0u8; 2048];
     let bytes_read = read_half.read(&mut chunk).await.unwrap();
 
+    write_half.shutdown().await.expect("Failed to shut down write side");
+    drop(read_half);
+    drop(write_half);
+
     chunk.truncate(bytes_read);
 
     let buffer_str = match std::str::from_utf8(&chunk) {
@@ -195,7 +200,7 @@ pub async fn server_connect(app: &AppHandle) -> io::Result<()> {
         .collect();
     println!("received assigned nodes: {:?}", ips);
 
-    establish_ss_with_node(&mut read_half, &mut write_half).await;
+    
 
     let mut successful_connection = None;
 
@@ -215,12 +220,17 @@ pub async fn server_connect(app: &AppHandle) -> io::Result<()> {
 
     if let Some(stream) = successful_connection {
         let (mut read_half, mut write_half) = tokio::io::split(stream);
-
+        establish_ss_with_node(&mut read_half, &mut write_half).await;
         let buffer = create_server_connect_packet().await.unwrap();
         write_half.write_all(&buffer).await?;
 
         {
             let mut global_write_half = super::super::GLOBAL_WRITE_HALF.lock().await;
+
+            if let Some(mut existing_write_half) = global_write_half.take() {
+                let _ = existing_write_half.shutdown().await;
+            }
+
             *global_write_half = Some(write_half);
         }
 
@@ -399,4 +409,9 @@ async fn listen(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn establish_ss(dst_user_id: String) {
+    super::tcp::send_kyber_key(hex::decode(dst_user_id).unwrap()).await;
 }
