@@ -43,6 +43,7 @@ pbkdf2 = "0.12.2"
 hmac = "0.12.1"
 bcrypt = "0.17.0"
 chrono = "0.4.40"
+tokio-util = { version = "0.7", features = ["full"] }
 
 [profile.dev]
 incremental = true

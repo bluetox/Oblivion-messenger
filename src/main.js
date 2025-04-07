@@ -93,9 +93,6 @@ async function checkPassword() {
   document.getElementById("passwordInput").value = null;
   const accountCred = await invoke("generate_dilithium_keys", {password: password});
 
-
-
-
   if (password) {
     document.getElementById("passwordOverlay").style.display = "none";
     document.getElementById("container").style.display = "flex";
@@ -108,7 +105,7 @@ async function checkPassword() {
 async function openChat(chatName, userId, chatId) {
   document.getElementById("chatTitle").innerText = chatName;
   document.getElementById("chatMessages").innerHTML = "";
-
+  console.log(chatId);
   try {
     const messages = await invoke("get_messages", {chatId: chatId});
     console.log(messages);
@@ -147,7 +144,7 @@ async function openChat(chatName, userId, chatId) {
     newMessage.classList.add("message", "message-sent");
     newMessage.innerText = message;
     chatMessages.appendChild(newMessage);
-    await invoke("save_message", {senderId: userId, message: message, messageType: "sent"});
+    await invoke("save_message", {chatId: chatId,senderId: userId, message: message});
     chatMessages.scrollTop = chatMessages.scrollHeight;
   };
 
@@ -166,9 +163,7 @@ async function listenForMessages() {
       return;
     }
 
-
     try {
-      await invoke("save_message", {senderId: userId, message: message, messageType: "received"});
       
       const chatMessages = document.getElementById("chatMessages");
       const newMessage = document.createElement("div");

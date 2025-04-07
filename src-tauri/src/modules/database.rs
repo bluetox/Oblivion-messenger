@@ -154,23 +154,17 @@ pub async fn save_shared_secret(user_id: &str, shared_secret: Vec<u8>) -> Result
 #[tauri::command]
 pub async fn save_message(
     state: tauri::State<'_, super::objects::AppState>,
+    chat_id: &str,
     sender_id: &str,
     message: String,
-    message_type: &str,
 ) -> Result<(), String> {
     let db = &state.db;
     let key = super::super::ENCRYPTION_KEY.lock().await;
-
+    println!("REALLY HOPE THIS DOESN'T PRINT");
     let encrypted_message_vec = super::encryption::encrypt_message(&message, &key).await;
     let encrypted_message = hex::encode(encrypted_message_vec);
 
     let current_time = chrono::Utc::now().timestamp();
-
-    let chat_id: String = sqlx::query_scalar("SELECT chat_id FROM chats WHERE dst_user_id = ?")
-        .bind(sender_id)
-        .fetch_one(db)
-        .await
-        .map_err(|e| format!("Failed to get chat_id: {}", e))?;
 
     sqlx::query("UPDATE chats SET last_updated = ? WHERE chat_id = ?")
         .bind(&current_time)
@@ -183,7 +177,56 @@ pub async fn save_message(
     sqlx::query("INSERT INTO messages (message_id, sender_id, message_type, content, chat_id) VALUES (?1, ?2, ?3, ?4, ?5)")
         .bind(message_id)
         .bind(sender_id)
-        .bind(message_type)
+        .bind("sent")
+        .bind(encrypted_message)
+        .bind(chat_id)
+        .execute(db)
+        .await
+        .map_err(|e| format!("Error saving todo: {}", e))?;
+    Ok(())
+}
+
+pub async fn save_received_message(
+    source_id: &str,
+    dst_id: &str,
+    message: &str,
+) -> Result<(), String> {
+    let db = super::super::GLOBAL_DB
+        .get()
+        .ok_or_else(|| "Database not initialized".to_string())?;
+    let key = super::super::ENCRYPTION_KEY.lock().await;
+    let encrypted_message_vec = super::encryption::encrypt_message(&message, &key).await;
+    let encrypted_message = hex::encode(encrypted_message_vec);
+
+    let current_time = chrono::Utc::now().timestamp();
+
+    let profil_dst: String = sqlx::query_scalar("SELECT profile_name FROM profiles WHERE user_id = ?")
+        .bind(dst_id)
+        .fetch_one(db)
+        .await
+        .map_err(|e| format!("Failed to get chat_id: {}", e))?;
+
+    let chat_id: String = sqlx::query_scalar("SELECT chat_id FROM chats WHERE dst_user_id = ?1 AND chat_profil= ?2")
+        .bind(&source_id)
+        .bind(&profil_dst)
+        .fetch_one(db)
+        .await
+        .map_err(|e| format!("Failed to get chat_id: {}", e))?;
+
+    println!("Received a message from source id {} with destination id {}. Profil dst is thought to be {} Current profile is {}", source_id, dst_id, &profil_dst, super::super::PROFILE_NAME.lock().await);
+
+    sqlx::query("UPDATE chats SET last_updated = ? WHERE chat_id = ?")
+        .bind(&current_time)
+        .bind(&chat_id)
+        .execute(db)
+        .await
+        .map_err(|e| format!("Error updating shared secret: {}", e))?;
+
+    let message_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO messages (message_id, sender_id, message_type, content, chat_id) VALUES (?1, ?2, ?3, ?4, ?5)")
+        .bind(message_id)
+        .bind(source_id)
+        .bind("received")
         .bind(encrypted_message)
         .bind(chat_id)
         .execute(db)

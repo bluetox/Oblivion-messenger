@@ -112,7 +112,8 @@ pub async fn handle_message(buffer: &Vec<u8>, app: &AppHandle) -> Result<(), Str
     let dilithium_pub_key = &buffer[5 + 3293 + 64.. 5 + 3293 + 64 + 1952];
     let ed25519_pub_key = &buffer[5 + 3293 + 64 + 1952..5 + 3293 + 64 + 1952 + 32];
     let src_id_nonce = &buffer[5 + 3293 + 64 + 1952 + 32 + 32..5 + 3293 + 64 + 1952 + 32 + 32 + 16];
-
+    let dst_id_bytes = &buffer[5 + 3293 + 64 + 1952 + 32..5 + 3293 + 64 + 1952 + 32 + 32];
+    let dst_id_hex = hex::encode(dst_id_bytes);
     let data_to_sign_bytes = &buffer[5 + 3293 + 64 ..];
 
     let full_hash_input = [
@@ -133,14 +134,14 @@ pub async fn handle_message(buffer: &Vec<u8>, app: &AppHandle) -> Result<(), Str
         return Err("Invalid Ed25519 signature".to_string());
     }
 
-    let dst_id_hex = utils::create_user_id_hash(&full_hash_input);
+    let source_id = utils::create_user_id_hash(&full_hash_input);
 
     let locked_shared_secrets = super::super::SHARED_SECRETS.lock().await;
-    let shared_secret = match locked_shared_secrets.get(&dst_id_hex) {
+    let shared_secret = match locked_shared_secrets.get(&source_id) {
         Some(secret) => secret.clone(),
         None => {
-            println!("[ERROR] No shared secret found for {}", dst_id_hex);
-            return Err(format!("No shared secret found for {}", dst_id_hex));
+            println!("[ERROR] No shared secret found for {}", source_id);
+            return Err(format!("No shared secret found for {}", source_id));
         }
     };
 
@@ -151,11 +152,12 @@ pub async fn handle_message(buffer: &Vec<u8>, app: &AppHandle) -> Result<(), Str
     .await
     {
         Ok(decrypted_message) => {
+            super::database::save_received_message(&source_id, &dst_id_hex, &decrypted_message).await.unwrap();
             app.emit(
                 "received-message",
                 format!(
                     "{{\"source\": \"{}\", \"message\": \"{}\"}}",
-                    dst_id_hex, decrypted_message
+                    source_id, decrypted_message
                 ),
             ).unwrap();
             Ok(())
